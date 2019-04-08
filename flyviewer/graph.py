@@ -6,9 +6,10 @@ from matplotlib.backends.backend_tkagg import (
 from matplotlib.backend_bases import key_press_handler, MouseEvent
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+import seaborn as sns
 
 def create_figure():
-    fig = Figure(figsize=(5, 1.2), dpi=100)
+    fig = Figure(figsize=(7, 2), dpi=100)
     fig.add_subplot(111)#.plot(t, 2 * np.sin(2 * np.pi * t))
     #fig.axes.get_yaxis()
     fig.axes[0].spines['right'].set_visible(False)
@@ -21,8 +22,9 @@ def create_figure():
     fig.axes[0].spines['left'].set_bounds(y0, y1)
     fig.axes[0].spines['bottom'].set_bounds(x0, x1)
     fig.axes[0].set_ylabel('Global\nmotion')
-    fig.tight_layout()
+    fig.set_tight_layout(True)
     fig.axes[0].set_xlabel('frames', labelpad=-2)
+    sns.despine(ax=fig.axes[0], trim=True, offset=5)
     return fig
 
 class Graph(tk.Canvas):
@@ -32,21 +34,29 @@ class Graph(tk.Canvas):
         optionList = ('train', 'plane', 'boat')
         self.v = tk.StringVar()
         self.v.set(optionList[0])
-        self.om = tk.OptionMenu(self, self.v, *optionList)
-        self.om.grid(row=0, column=0, sticky='nsew')
+        self.varlistbox = tk.Listbox(self, width=10)
+        for item in optionList:
+            self.varlistbox.insert(tk.END, item)
+        self.currentvar = optionList[0]
+        self.varlistbox.grid(row=0, column=0, sticky='new')
 
         self.fig = create_figure()
-        self.update()
-        self.canvas.get_tk_widget().grid(row=0, column=1, sticky='nsew')
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self)  # A tk.DrawingArea.
+        self.canvas.get_tk_widget().grid(row=0, column=1)
 
         for i in range(2):
             self.grid_columnconfigure(i,weight=1)
         for i in range(1):
             self.grid_rowconfigure(i,weight=1)
+        self.update()
 
 
     def update(self):
-        print('Change to', self.v.get())
-        self.fig.axes[0].set_ylabel(self.v.get())
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)  # A tk.DrawingArea.
-        self.canvas.draw()
+        csel = self.varlistbox.curselection()
+        if len(csel) > 0:
+            newv = self.varlistbox.get(csel)
+            if newv != self.currentvar:
+                self.currentvar = newv
+                print('Change to', newv)
+                self.fig.axes[0].set_ylabel(newv)
+                self.canvas.draw()

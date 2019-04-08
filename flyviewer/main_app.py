@@ -3,10 +3,16 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import os, platform, subprocess
 import flyviewer.defaults as defs
-from flyviewer.data_object import Data
+from flyviewer.data import Data
 from flyviewer.graph import Graph
 from flyviewer.treeview import TreeView
 from flyviewer.viewer import Viewer
+import argparse
+
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('directory', type=str, help='data directory')
+args = parser.parse_args()
+input_dir = args.directory
 #import flyviewer.style as style
 viewer_frame = 'Viewer.TFrame'
 treeview_frame = 'Treeview.TFrame'
@@ -40,24 +46,6 @@ def on_key_press(event):
     print("you pressed {}".format(event.key))
     key_press_handler(event, canvas, toolbar)
 
-def get_figure():
-    fig = Figure(figsize=(5, 1.2), dpi=100)
-    fig.add_subplot(111)#.plot(t, 2 * np.sin(2 * np.pi * t))
-    #fig.axes.get_yaxis()
-    fig.axes[0].spines['right'].set_visible(False)
-    fig.axes[0].spines['top'].set_visible(False)
-
-    fig.axes[0].set_xticks([0, 180000, 360000])
-    fig.axes[0].set_yticks([-2,0,2])
-    x0, x1 = fig.axes[0].get_xticks()[0], fig.axes[0].get_xticks()[-1]
-    y0, y1 = fig.axes[0].get_yticks()[0], fig.axes[0].get_yticks()[-1]
-    fig.axes[0].spines['left'].set_bounds(y0, y1)
-    fig.axes[0].spines['bottom'].set_bounds(x0, x1)
-    fig.axes[0].set_ylabel('Global\nmotion')
-    fig.tight_layout()
-    fig.axes[0].set_xlabel('frames', labelpad=-2)
-    return fig
-
 class MainApp(tk.Tk):
     def __init__(self, *args, input=None, **kwargs):
         tk.Tk.__init__(self,None)
@@ -68,13 +56,13 @@ class MainApp(tk.Tk):
         style = ttk.Style()
         style.theme_use('default') # select the Unix theme
 
-        self.data = Data()
-        self.tree = TreeView(self)
-        self.tree.grid(row=0, rowspan=5, column=0, columnspan=3, sticky='nsew')
+        self.data = Data(input_dir)
+        self.tree = TreeView(self, data=self.data)
+        self.tree.grid(row=0, rowspan=6, column=0, columnspan=5, sticky='nsew')
         self.viewer = Viewer(self)
-        self.viewer.grid(row=0, rowspan=4, column=3, columnspan=4, sticky='nsew')
+        self.viewer.grid(row=0, rowspan=5, column=5, columnspan=5, sticky='nsew')
         self.graph = Graph(self)
-        self.graph.grid(row=4, column=3, columnspan=4, sticky='nsew')
+        self.graph.grid(row=5, column=5, columnspan=5, sticky='nsew')
 
 
         raise_app(self)
@@ -86,8 +74,12 @@ class MainApp(tk.Tk):
         self.update()
         self.mainloop()
 
+    def run_video(self, fullpath):
+        self.viewer.init_video(fullpath)
+
     def update(self):
         self.graph.update()
+        self.viewer.update()
         self.after(1, self.update)
 
 def main():
